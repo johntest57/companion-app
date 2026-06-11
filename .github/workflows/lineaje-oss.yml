@@ -1,0 +1,19 @@
+name: Lineaje OSS Scan
+
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: lineaje-com/lineaje-scan-action@main
+        with:
+          scan_type: source
+          lineaje_cli_token: ${{ secrets.LINEAJE_PAT_TOKEN }}
+          language: node
+          language_version: "18"
+          post_scan: scan_only
