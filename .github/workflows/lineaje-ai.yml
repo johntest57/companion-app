@@ -1,0 +1,46 @@
+name: Lineaje AI Scan
+
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  lineaje-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout target repo
+        uses: actions/checkout@v4
+        with:
+          path: target-repo
+
+      - name: Checkout scanner scripts
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository }}
+          path: .lineaje-scanner
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install mcp
+
+      - name: Run Lineaje AI policy scan with fix PR
+        env:
+          LINEAJE_PAT_TOKEN: ${{ secrets.LINEAJE_PAT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          TARGET_SHA=$(git -C target-repo rev-parse HEAD)
+          python .lineaje-scanner/.github/lineaje_ai_scan.py \
+            --source-path target-repo \
+            --repo "${{ github.event.inputs.source_repo }}" \
+            --branch "${{ github.event.inputs.branch }}" \
+            --head-sha "$TARGET_SHA" \
+            | tee scan_result.txt
+
+      - name: Publish scan result to job summary
+        if: always()
+        run: cat scan_result.txt >> $GITHUB_STEP_SUMMARY
